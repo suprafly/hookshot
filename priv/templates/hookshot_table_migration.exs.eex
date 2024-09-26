@@ -1,0 +1,75 @@
+defmodule <%= @module_name %>.Repo.Migrations.CreateHookshotTables do
+  use Ecto.Migration
+
+  def change do
+    create table(:hookshot_event_types, primary_key: false) do
+      add(:name, :string, primary_key: true)
+    end
+
+    create table(:hookshot_subscriptions, primary_key: false) do
+      add(:id, :uuid, primary_key: true, null: false)
+
+      add(:resource_id, :string, null: false)
+
+      add(:target, :string)
+
+      add(:secret, :binary)
+
+      add(:event_types, {:array, :string}, default: [])
+
+      # Status for the subscription. This allows for enabled (active/inactive),
+      # and it also allows for the subscription to be flagged (invalid responses)
+
+      # Available statuses: ["active", "inactive", "flagged"]
+      add(:status, :string, default: "pending", null: false)
+      add(:flagged_reason, :string, null: true)
+
+      timestamps()
+    end
+
+    # Ensure that `:resource_id` is unique among subcriptions
+    unique_index(:hookshot_subscriptions, [:resource_id])
+
+    create table(:hookshot_events, primary_key: false) do
+      add(:id, :uuid, primary_key: true, null: false)
+
+      add(:retries, :integer, default: 0, null: false)
+
+      add(:status, :string, default: "pending", null: false)
+
+      add(:data, :binary)
+      add(:metadata, :binary)
+
+      add(:signature_header, :string)
+      add(:signature_data, :string)
+
+      add(:target, :string)
+
+      add(:type, references(:hookshot_event_types, column: :name, type: :string), null: false)
+      add(:subscription_id, references(:hookshot_subscriptions), null: false)
+
+      add(:occurred_at, :naive_datetime, default: fragment("now()"))
+      add(:send_after, :naive_datetime, default: fragment("now()"))
+
+      timestamps()
+    end
+
+    create table(:hookshot_attempts, primary_key: false) do
+      add(:id, :uuid, primary_key: true, null: false)
+
+      add(:status, :string, null: false)
+
+      add(:response_status_code, :integer)
+
+      add(:event_id, references(:hookshot_events), null: false, on_delete: :nothing)
+      add(:subscription_id, references(:hookshot_subscriptions), null: false, on_delete: :nothing)
+
+      add(:within_time_frame, :boolean, null: false)
+
+      add(:request_sent_at, :naive_datetime)
+      add(:response_received_at, :naive_datetime)
+
+      timestamps()
+    end
+  end
+end
