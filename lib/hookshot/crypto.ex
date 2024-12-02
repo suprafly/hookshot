@@ -30,6 +30,13 @@ defmodule Hookshot.Crypto do
     end
   end
 
+  def decrypt!(binary_cipher_text, key \\ nil) do
+    <<iv::binary-16, tag::binary-16, cipher_text::binary>> = binary_cipher_text
+    key = key || get_key()
+    encrypt_flag = false
+    :crypto.crypto_one_time_aead(@cipher, key, iv, cipher_text, @aad, tag, encrypt_flag)
+  end
+
   defp get_random_iv do
     :crypto.strong_rand_bytes(16)
   end

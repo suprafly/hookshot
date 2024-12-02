@@ -28,8 +28,8 @@ defmodule Hookshot.Ecto.EncryptedMap do
 
   def load(value) do
     value
-    |> Crypto.decrypt()
-    |> Hookshot.json().decode!()
+    |> Crypto.decrypt!()
+    |> Hookshot.json().decode()
   end
 
   def embed_as(_) do
